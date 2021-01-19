@@ -1,0 +1,4 @@
+include ':app'
+include ':billing'
+include ':adhelper'
+rootProject.name = "Modules"
