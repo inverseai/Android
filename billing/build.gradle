@@ -47,7 +47,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.6'
 
     //billing dependency
-    implementation "com.android.billingclient:billing-ktx:3.0.2"
+    api "com.android.billingclient:billing-ktx:3.0.2"
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
