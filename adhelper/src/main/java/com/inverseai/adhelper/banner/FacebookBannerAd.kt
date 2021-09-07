@@ -8,9 +8,14 @@ import com.facebook.ads.AdSize
 import com.facebook.ads.AdView
 import com.inverseai.adhelper.BuildConfig
 import com.inverseai.adhelper.R
+import com.inverseai.adhelper.util.AdCallback
 
 class FacebookBannerAd(private val size: BannerAd.AdSize): BannerAd {
     private var adView: AdView? = null
+    private var callback: AdCallback? = null
+    override fun setListener(listener: AdCallback) {
+        this.callback = listener
+    }
 
     override fun getAdSize(): Int {
         val height = (convertToFanAdSize().height * Resources.getSystem().displayMetrics.density).toInt()

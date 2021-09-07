@@ -7,9 +7,12 @@ import com.facebook.ads.AdError
 import com.facebook.ads.InterstitialAdListener
 import com.inverseai.adhelper.BuildConfig
 import com.inverseai.adhelper.R
+import com.inverseai.adhelper.util.AdCallback
+import com.inverseai.adhelper.util.AdType
 
-class FacebookInterstitialAd(context: Context): InterstitialAd {
+class FacebookInterstitialAd(context: Context) : InterstitialAd {
 
+    private var callback: AdCallback? = null
     private var interstitialAd: com.facebook.ads.InterstitialAd? = null
 
     private var isAdLoaded: Boolean = false
@@ -22,12 +25,16 @@ class FacebookInterstitialAd(context: Context): InterstitialAd {
     private var try_count: Int = 0
 
     init {
-        adId = context.getString(context.resources.getIdentifier("fan_interstitial_placement", "string",
-                context.applicationContext.packageName))
+        adId =if(BuildConfig.DEBUG)"" else context.getString(
+            context.resources.getIdentifier(
+                "fan_interstitial_placement", "string",
+                context.applicationContext.packageName
+            )
+        )
         MAXIMUM_TRY_LOADING_AD = context.resources.getInteger(R.integer.maximum_try_loading_ad)
     }
 
-    inner class InterAdListener(private val context: Context): InterstitialAdListener {
+    inner class InterAdListener(private val context: Context) : InterstitialAdListener {
 
         override fun onInterstitialDisplayed(ad: Ad) {
             // Interstitial ad displayed callback
@@ -52,10 +59,11 @@ class FacebookInterstitialAd(context: Context): InterstitialAd {
             isAdLoadingFailed = isAdLoadingFailed
             isAdShowed = false
 
-            if(try_count <= MAXIMUM_TRY_LOADING_AD) {
+            if (try_count <= MAXIMUM_TRY_LOADING_AD) {
                 try_count++
                 loadAd(context)
             }
+            callback?.onAdLoaded(AdType.TYPE_INTERSTITIAL)
         }
 
         override fun onAdLoaded(ad: Ad) {
@@ -65,6 +73,7 @@ class FacebookInterstitialAd(context: Context): InterstitialAd {
             isAdLoadingFailed = false
             isAdShowed = false
             try_count = 0
+            callback?.onAdLoaded(AdType.TYPE_INTERSTITIAL)
         }
 
         override fun onAdClicked(ad: Ad) {
@@ -76,19 +85,33 @@ class FacebookInterstitialAd(context: Context): InterstitialAd {
         }
     }
 
-    override fun loadAd(context: Context) {
-        interstitialAd = com.facebook.ads.InterstitialAd(context
-                , if(BuildConfig.DEBUG) String.format(context.resources.getString(R.string.facebook_interstitial_test_format), adId) else adId)
+    override fun setListener(listener: AdCallback) {
+        this.callback = listener
+    }
 
-        interstitialAd?.loadAd(interstitialAd?.buildLoadAdConfig()?.withAdListener(InterAdListener(context))?.build())
+    override fun loadAd(context: Context) {
+        interstitialAd = com.facebook.ads.InterstitialAd(
+            context,
+            if (BuildConfig.DEBUG) String.format(
+                context.resources.getString(R.string.facebook_interstitial_test_format),
+                adId
+            ) else adId
+        )
+
+        interstitialAd?.loadAd(
+            interstitialAd?.buildLoadAdConfig()?.withAdListener(InterAdListener(context))?.build()
+        )
     }
 
     override fun show(context: Context) {
         interstitialAd?.let {
-            if(isAdLoaded && !isAdShowed) it.show()
+            if (isAdLoaded && !isAdShowed) it.show()
         }
     }
 
+    override fun isLoaded(): Boolean {
+        return (interstitialAd != null && interstitialAd!!.isAdLoaded)
+    }
 
     override fun onDestroy(context: Context) {
         interstitialAd?.destroy()

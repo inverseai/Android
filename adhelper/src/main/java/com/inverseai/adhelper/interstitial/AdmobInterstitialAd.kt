@@ -2,6 +2,7 @@ package com.inverseai.adhelper.interstitial
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import com.inverseai.adhelper.InterstitialAd
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
@@ -9,6 +10,8 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
 import com.inverseai.adhelper.BuildConfig
 import com.inverseai.adhelper.R
+import com.inverseai.adhelper.util.AdCallback
+import com.inverseai.adhelper.util.AdType
 
 class AdmobInterstitialAd(context: Context) : InterstitialAd {
 
@@ -22,15 +25,17 @@ class AdmobInterstitialAd(context: Context) : InterstitialAd {
 
     private val MAXIMUM_TRY_LOADING_AD: Int
     private var try_count: Int = 0
+    private var callback: AdCallback? = null
 
     init {
-        adId = context.getString(
+        adId = if (BuildConfig.DEBUG) "" else context.getString(
             context.resources.getIdentifier(
                 "admob_interstitial", "string",
                 context.applicationContext.packageName
             )
         )
         MAXIMUM_TRY_LOADING_AD = context.resources.getInteger(R.integer.maximum_try_loading_ad)
+        //loadAd(context)
     }
 
     inner class InterAdListener(private val context: Context) : AdListener() {
@@ -42,6 +47,7 @@ class AdmobInterstitialAd(context: Context) : InterstitialAd {
             isAdLoadingFailed = false
             isAdShowed = false
             try_count = 0
+            callback?.onAdLoaded(AdType.TYPE_INTERSTITIAL)
         }
 
         override fun onAdClicked() {
@@ -67,6 +73,7 @@ class AdmobInterstitialAd(context: Context) : InterstitialAd {
                 try_count++
                 loadAd(context)
             }
+            callback?.onAdLoaded(AdType.TYPE_INTERSTITIAL)
         }
 
         override fun onAdClosed() {
@@ -75,7 +82,6 @@ class AdmobInterstitialAd(context: Context) : InterstitialAd {
             isAdLoaded = false
             isAdLoadingFailed = false
             isAdShowed = false
-
             loadAd(context)
         }
 
@@ -88,7 +94,14 @@ class AdmobInterstitialAd(context: Context) : InterstitialAd {
         }
     }
 
+    override fun setListener(listener: AdCallback) {
+        this.callback = listener
+    }
+
     override fun loadAd(context: Context) {
+
+        if (interstitialAd != null && (interstitialAd!!.isLoaded || interstitialAd!!.isLoading)) return
+
         interstitialAd = com.google.android.gms.ads.InterstitialAd(context)
         interstitialAd?.adUnitId =
             if (BuildConfig.DEBUG) context.resources.getString(R.string.admob_interstitial_id_test) else adId
@@ -97,10 +110,21 @@ class AdmobInterstitialAd(context: Context) : InterstitialAd {
     }
 
     override fun show(context: Context) {
+        if (interstitialAd==null || !interstitialAd!!.isLoaded) {
+            loadAd(context)
+            if(BuildConfig.DEBUG){
+                Toast.makeText(context, "Ad Not Loaded", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
         interstitialAd?.let {
             Log.d(TAG, "show: showing ad")
             if (it.isLoaded && !isAdShowed) it.show()
         }
+    }
+
+    override fun isLoaded(): Boolean {
+        return (interstitialAd != null && interstitialAd!!.isLoaded)
     }
 
     override fun onDestroy(context: Context) {

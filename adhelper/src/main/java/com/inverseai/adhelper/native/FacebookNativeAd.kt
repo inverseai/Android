@@ -8,8 +8,10 @@ import android.view.ViewGroup
 import com.inverseai.adhelper.NativeAd
 import com.facebook.ads.*
 import com.inverseai.adhelper.R
+import com.inverseai.adhelper.util.AdCallback
+import com.inverseai.adhelper.util.AdType
 
-class FacebookNativeAd: NativeAd {
+class FacebookNativeAd : NativeAd {
 
     companion object {
 
@@ -24,7 +26,7 @@ class FacebookNativeAd: NativeAd {
     }
 
     private var nativeAd: com.facebook.ads.NativeAd? = null
-
+    private var callback: AdCallback? = null
     private val layoutHeightDp = MIN_HEIGHT_DP
 
     private val adBackgroundColor = Color.WHITE
@@ -33,7 +35,8 @@ class FacebookNativeAd: NativeAd {
     private val contentColor = COLOR_LIGHT_GRAY
     private val ctaBgColor = Color.WHITE
 
-    inner class AdListener(private val context: Context, private val container: ViewGroup): NativeAdListener {
+    inner class AdListener(private val context: Context, private val container: ViewGroup) :
+        NativeAdListener {
         override fun onAdClicked(p0: Ad?) {
         }
 
@@ -41,14 +44,20 @@ class FacebookNativeAd: NativeAd {
         }
 
         override fun onError(p0: Ad?, p1: AdError?) {
+            callback?.onFailedToLoad(AdType.TYPE_NATIVE)
         }
 
         override fun onAdLoaded(p0: Ad?) {
             reloadAdContainer(context, container)
+            callback?.onAdLoaded(AdType.TYPE_NATIVE)
         }
 
         override fun onLoggingImpression(p0: Ad?) {
         }
+    }
+
+    override fun setListener(adCallback: AdCallback) {
+        this.callback = adCallback
     }
 
     override fun loadAndShow(context: Context, container: ViewGroup) {
@@ -64,11 +73,20 @@ class FacebookNativeAd: NativeAd {
         // (generate your own on the Facebook app settings).
         // Use different ID for each ad placement in your app.
 
-        val adId = context.getString(context.resources.getIdentifier("fan_native_placement", "string",
-                context.applicationContext.packageName))
+        val adId = context.getString(
+            context.resources.getIdentifier(
+                "fan_native_placement", "string",
+                context.applicationContext.packageName
+            )
+        )
 
-        nativeAd = com.facebook.ads.NativeAd(context,
-        if(BuildConfig.DEBUG) String.format(context.resources.getString(R.string.facebook_native_test_format), adId) else adId)
+        nativeAd = com.facebook.ads.NativeAd(
+            context,
+            if (BuildConfig.DEBUG) String.format(
+                context.resources.getString(R.string.facebook_native_test_format),
+                adId
+            ) else adId
+        )
 
         // Initiate a request to load an ad.
         nativeAd?.let {
@@ -83,19 +101,20 @@ class FacebookNativeAd: NativeAd {
 
             // Create a NativeAdViewAttributes object and set the attributes
             val attributes =
-                    NativeAdViewAttributes(context)
-                            .setBackgroundColor(adBackgroundColor)
-                            .setTitleTextColor(titleColor)
-                            .setDescriptionTextColor(contentColor)
-                            .setButtonBorderColor(ctaTextColor)
-                            .setButtonTextColor(ctaTextColor)
-                            .setButtonColor(ctaBgColor)
+                NativeAdViewAttributes(context)
+                    .setBackgroundColor(adBackgroundColor)
+                    .setTitleTextColor(titleColor)
+                    .setDescriptionTextColor(contentColor)
+                    .setButtonBorderColor(ctaTextColor)
+                    .setButtonTextColor(ctaTextColor)
+                    .setButtonColor(ctaBgColor)
 
             // Use NativeAdView.render to generate the ad View
             val adView = NativeAdView.render(activity, nativeAd!!, attributes)
 
             nativeAdContainer!!.addView(
-                    adView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
+                adView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0)
+            )
             updateAdViewParams(adView)
         }
     }

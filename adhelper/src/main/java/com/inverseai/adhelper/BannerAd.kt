@@ -2,6 +2,7 @@ package com.inverseai.adhelper
 
 import android.content.Context
 import android.view.ViewGroup
+import com.inverseai.adhelper.util.AdCallback
 
 interface BannerAd {
 
@@ -12,6 +13,7 @@ interface BannerAd {
     fun getAdSize(): Int
 
     fun loadAd(context: Context, adContainer: ViewGroup)
+    fun setListener(listener:AdCallback)
 
     fun onDestroy(context: Context)
 }

@@ -13,15 +13,22 @@ import com.inverseai.adhelper.BuildConfig
 import com.inverseai.adhelper.R
 import com.inverseai.adhelper.nativeTemplates.NativeTemplateStyle
 import com.inverseai.adhelper.nativeTemplates.TemplateView
+import com.inverseai.adhelper.util.AdCallback
+import com.inverseai.adhelper.util.AdType
 import com.inverseai.adhelper.util.DeviceUtil
 import java.util.*
 
 class AdmobNativeAd(context: Context) : NativeAd {
 
     private val admobNativeId: String
+    private var callback: AdCallback? = null
+    override fun setListener(callback: AdCallback) {
+        this.callback = callback
+    }
 
     init {
-        admobNativeId = context.getString(
+
+        admobNativeId =if(BuildConfig.DEBUG)"" else context.getString(
             context.resources.getIdentifier(
                 "admob_native", "string",
                 context.applicationContext.packageName
@@ -55,8 +62,7 @@ class AdmobNativeAd(context: Context) : NativeAd {
         } else {
             if (DeviceUtil.isNetworkPresent(context)) {
                 val builder = AdLoader.Builder(
-                    context
-                    ,
+                    context,
                     if (BuildConfig.DEBUG) context.resources.getString(R.string.admob_native_id_test) else admobNativeId
                 )
                     .forUnifiedNativeAd { unifiedNativeAd ->
@@ -93,6 +99,7 @@ class AdmobNativeAd(context: Context) : NativeAd {
                 if (!mAdLoader!!.isLoading) {
                     isAdmobNativeReady = true
                 }
+                callback?.onAdLoaded(AdType.TYPE_NATIVE)
             }
         }).withAdListener(object : AdListener() {
             override fun onAdFailedToLoad(p0: LoadAdError?) {
@@ -101,6 +108,7 @@ class AdmobNativeAd(context: Context) : NativeAd {
                 if (!mAdLoader!!.isLoading) {
                     isAdmobNativeReady = true
                 }
+                callback?.onFailedToLoad(AdType.TYPE_NATIVE)
             }
 
             override fun onAdClicked() {
